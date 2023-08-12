@@ -15,7 +15,7 @@
 <div>
 	<h2>ビルドに必要なモジュール</h2>
 	<ul>
-		<li>PySide6</li><br>
+		<li>PySide6</li>
 
 	</ul>
 </div>
