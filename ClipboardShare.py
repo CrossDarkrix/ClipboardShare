@@ -29,14 +29,21 @@ class ReceiveClipboardText(QObject):
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.bind(('0.0.0.0', 50618))
-            self.s.listen(999999999)
+            self.s.listen(100)
             while not WillClosed[0]:
-                try:
-                    (insock, _) = self.s.accept()
-                    data = insock.recv(999999999)
-                    self.textSignal.emit(data.decode('utf-8'))
-                except:
-                    pass
+                full_data = b''
+                Loop = True
+                (insock, _) = self.s.accept()
+                while Loop:
+                    try:
+                        data = insock.recv(1073741824)
+                        if len(data) <= 0:
+                            Loop = False
+                        else:
+                            full_data += data
+                    except:
+                        pass
+                self.textSignal.emit(full_data.decode('utf-8'))
                 time.sleep(0.89)
         except:
             pass
