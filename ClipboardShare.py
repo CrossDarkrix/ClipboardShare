@@ -9,12 +9,30 @@ import time
 import threading
 
 from PySide6.QtCore import (QByteArray, QMetaObject, QRect,
-                            QSize, Qt, Signal, Slot, QObject)
+                            QSize, Qt, Signal, Slot, QObject, QTimer)
 from PySide6.QtGui import (QFont, QIcon,
                            QImage, QPixmap, QStandardItemModel, QStandardItem, QClipboard)
 from PySide6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QPushButton, QPlainTextEdit, QCompleter, QLabel)
 
 WillClosed = [False]
+
+class GetLatestiP(QObject):
+    textSignal = Signal(str)
+    def __init__(self, ip):
+        QObject.__init__(self)
+        self.ip = ['']
+        self.ip[0] = ip
+        timer = QTimer()
+        timer.setInterval(600000)
+        timer.timeout.connect(self.CheckiP)
+
+    def CheckiP(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(('8.8.8.8', 80))
+            ip = sock.getsockname()[0]
+            if ip != self.ip[0]:
+                self.ip[0] = ip
+                self.textSignal.emit(ip)
 
 class ReceiveClipboardText(QObject):
     textSignal = Signal(str)
@@ -28,7 +46,7 @@ class ReceiveClipboardText(QObject):
     async def setClip(self):
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.s.bind(('0.0.0.0', 50618))
+            self.s.bind(('0.0.0.0', 8961))
             self.s.listen(100)
             while not WillClosed[0]:
                 full_data = b''
@@ -51,16 +69,17 @@ class ReceiveClipboardText(QObject):
 class SendText(object):
     def __init__(self, host, text):
         self.host = host
-        try:
+        if not self.host == '':
             try:
-                asyncio.run(self.send(text))
+                try:
+                    asyncio.run(self.send(text))
+                except:
+                    pass
             except:
                 pass
-        except:
-            pass
 
     async def send(self, text):
-        _, writer = await asyncio.open_connection(self.host, 50618)
+        _, writer = await asyncio.open_connection(self.host, 8961) # reader, writer = await asyncio.open_connection(self.host, 8961)
         writer.write(text.encode('utf-8'))
         await writer.drain()
         writer.close()
@@ -165,6 +184,7 @@ class ClipGet(object):
         self.complete.setModel(self.completer_model)
         self.Find.setCompleter(self.complete)
         self.cliptext = ['']
+        self.OldClip = ['']
         self.ReceiveClipboard = ReceiveClipboardText()
         self.ReceiveClipboard.textSignal.connect(self.setClip)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -173,14 +193,22 @@ class ClipGet(object):
         self.retranslateUi(MemoPad)
         QMetaObject.connectSlotsByName(MemoPad)
         QApplication.clipboard().dataChanged.connect(self.append_clip)
+        self.GetiPAdress = GetLatestiP(self.ipaddress_view.text())
+        self.GetiPAdress.textSignal.connect(self.setLatestiP)
 
     @Slot(str)
-    def setClip(sel, text):
-        QApplication.clipboard().setText(text)
+    def setLatestiP(self, text):
+        self.ipaddress_view.setText(text)
+
+    @Slot(str)
+    def setClip(self, text):
+        if text != '':
+            QApplication.clipboard().setText(text)
 
     def delete_clipboard(self):
         QApplication.clipboard().setText('')
         self.ClipHistory.setPlainText('')
+        self.OldClip[0] = ''
 
     def Autocomplete(self):
         l = [0]
@@ -207,14 +235,18 @@ class ClipGet(object):
             time.sleep(5)
 
     def append_clip(self):
-        self.ClipHistory.appendPlainText(QApplication.clipboard().text())
+        if QApplication.clipboard().text() != '':
+            if self.OldClip[0] != QApplication.clipboard().text():
+                self.ClipHistory.appendPlainText(QApplication.clipboard().text())
+                self.OldClip[0] = QApplication.clipboard().text()
+                threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), QApplication.clipboard().text(),)).start()
 
     def send(self):
         threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), QApplication.clipboard().text(), )).start()
 
     def retranslateUi(self, MemoPad):
-        MemoPad.setWindowTitle('Get Clipboard')
-        self.Find.setPlaceholderText('set IP Address')
+        MemoPad.setWindowTitle('Get Clip')
+        self.Find.setPlaceholderText('Please set IP Address')
 
 def main():
     app = QApplication(sys.argv)
