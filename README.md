@@ -4,9 +4,7 @@
 </div>
 
 <h2 align="center">Python ClipboardShare Tool</h2>
-<h3 align="center">
-<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix//ClipboardShare/master/Images/Preview.png"></a>
-</h3>
+
 <div>
 	<h2>ビルドに必要なモジュール</h2>
 	<ul>
@@ -22,3 +20,7 @@
 		<li>テキストをコピーをするとデバイス間でコピーした内容の共有がされます</li>
 	</ol>
 </div>
+
+<h3 align="center">
+<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix//ClipboardShare/master/Images/Preview.png"></a>
+</h3>
