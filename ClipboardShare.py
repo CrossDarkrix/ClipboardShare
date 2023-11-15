@@ -46,7 +46,7 @@ class ReceiveClipboardText(QObject):
     async def setClip(self):
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.s.bind(('0.0.0.0', 8961))
+            self.s.bind(('0.0.0.0', 50618))
             self.s.listen(100)
             while not WillClosed[0]:
                 full_data = b''
@@ -79,7 +79,7 @@ class SendText(object):
                 pass
 
     async def send(self, text):
-        _, writer = await asyncio.open_connection(self.host, 8961) # reader, writer = await asyncio.open_connection(self.host, 8961)
+        _, writer = await asyncio.open_connection(self.host, 50618) # reader, writer = await asyncio.open_connection(self.host, 50618)
         writer.write(text.encode('utf-8'))
         await writer.drain()
         writer.close()
