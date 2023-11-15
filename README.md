@@ -4,7 +4,9 @@
 </div>
 
 <h2 align="center">Python ClipboardShare Tool</h2>
-<a align="center" href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="300px" height="200px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix//ClipboardShare/master/Images/Preview.png"></a>
+<h3 align="center">
+<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="300px" height="200px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix//ClipboardShare/master/Images/Preview.png"></a>
+</h3>
 <div>
 	<h2>ビルドに必要なモジュール</h2>
 	<ul>
