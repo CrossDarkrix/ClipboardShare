@@ -9,6 +9,7 @@ import socket
 import time
 import threading
 from kivy.core import clipboard
+from kivy.core.text import LabelBase
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import mainthread
 from kivy.utils import platform
@@ -22,6 +23,7 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.list import MDList
 from kivymd.uix.list import OneLineListItem
+from kivymd.font_definitions import theme_font_styles
 
 WillClosed = [False]
 Threads = [None]
@@ -32,8 +34,24 @@ PortNum = 50618
 clipText = [clipboard.Clipboard.paste()]
 
 
-class MDListsWidget(OneLineListItem):
-    text = StringProperty()
+class _StringProperty(StringProperty):
+    def __init__(self, **kwargs):
+        super(_StringProperty, self).__init__(**kwargs)
+
+
+class _MDScrollView(MDScrollView):
+    def __init__(self, *args, **kwargs):
+        super(_MDScrollView, self).__init__(*args, **kwargs)
+
+
+class _MDListsWidget(OneLineListItem):
+    text = _StringProperty()
+
+    def __init__(self, **kwargs):
+        super(_MDListsWidget, self).__init__(**kwargs)
+        self.theme_cls.font_styles['_ja-JP'] = ['_ja-JP', 100, False, 0.15]
+        self.font_style = '_ja-JP'
+
 
 class _MDFlatButton(MDFlatButton):
     def __init__(self, **kwargs):
@@ -155,9 +173,9 @@ class ReceiveClipboardText(EventDispatcher):
     def __init__(self, **kwargs):
         super(ReceiveClipboardText, self).__init__(**kwargs)
         self.register_event_type('on_receive')
-        Thread = threading.Thread(target=self.setClip, daemon=True)
-        Thread.start()
-        Threads[0] = Thread
+        _thread = threading.Thread(target=self.setClip, daemon=True)
+        _thread.start()
+        Threads[0] = _thread
 
     def on_receive(self):
         pass
@@ -214,7 +232,7 @@ class SendText(object):
 
 class ClipboardShare(MDApp):
     def build(self):
-        self.font_name = 'NotoSansJP'
+        self.font_name = '_ja-JP'
         if platform == 'android':
             import android
             android.start_service(title='ClipShare Service', description='Monitoring Clipboard Service', arg='running')
@@ -254,7 +272,9 @@ class ClipboardShare(MDApp):
         self.ViewList = _MDListWidget()
         self.ViewList.specific_text_color = [0, 0, 0, 0]
         self.ViewList.size = (50, 100)
-        self.ListView = MDScrollView(self.ViewList)
+        self.ViewList.font_name = '_ja-JP'
+        self.ListView = _MDScrollView(self.ViewList)
+        self.ListView.font_name = '_ja-JP'
         self.ListView.size = (50, 500)
         self.ListView.pos = (0, 500)
         self.Layout.add_widget(self.ListView)
@@ -301,7 +321,7 @@ class ClipboardShare(MDApp):
             if clip != self.ClipText:
                 self.ClipText = clip
                 SendText(host=self.TextFiled.text, text=clip)
-                text = MDListsWidget(text=clip)
+                text = _MDListsWidget(text=clip)
                 text.text_color = '#FFFFFF'
                 text.font_size = 500
                 text.width = 500
