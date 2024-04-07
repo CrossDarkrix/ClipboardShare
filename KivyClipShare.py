@@ -9,7 +9,6 @@ import socket
 import time
 import threading
 from kivy.core import clipboard
-from kivy.core.text import LabelBase
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import mainthread
 from kivy.utils import platform
@@ -21,9 +20,8 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.scrollview import MDScrollView
-from kivymd.uix.list import MDList
-from kivymd.uix.list import OneLineListItem
-from kivymd.font_definitions import theme_font_styles
+from kivymd.uix.list import MDList, OneLineIconListItem
+from kivymd.uix.list.list import IconLeftWidget
 
 WillClosed = [False]
 Threads = [None]
@@ -32,7 +30,6 @@ Threads3 = [None]
 _was_get_list = []
 PortNum = 50618
 clipText = [clipboard.Clipboard.paste()]
-
 
 class _StringProperty(StringProperty):
     def __init__(self, **kwargs):
@@ -44,13 +41,15 @@ class _MDScrollView(MDScrollView):
         super(_MDScrollView, self).__init__(*args, **kwargs)
 
 
-class _MDListsWidget(OneLineListItem):
+class _MDListsWidget(OneLineIconListItem):
     text = _StringProperty()
 
-    def __init__(self, **kwargs):
-        super(_MDListsWidget, self).__init__(**kwargs)
-        self.theme_cls.font_styles['_ja-JP'] = ['_ja-JP', 100, False, 0.15]
+    def __init__(self, *args, **kwargs):
+        super(_MDListsWidget, self).__init__(*args, **kwargs)
+        self.theme_cls.font_styles['_ja-JP'] = ['_ja-JP', 100, False, 1.5]
         self.font_style = '_ja-JP'
+        self.raw_text = ''
+        self.text = '[size=100]{}[/size]'.format(self.text)
 
 
 class _MDFlatButton(MDFlatButton):
@@ -78,7 +77,7 @@ class _MDListWidget(MDList):
     def get_text(self, widget):
         for _widget in self.widget_list:
             if _widget == widget:
-                return _widget.text
+                return _widget.raw_text
 
     def delete_all(self):
         for widget in self.widget_list:
@@ -244,14 +243,23 @@ class ClipboardShare(MDApp):
         self.title = 'ClipShare'
         self.icon = os.path.join(os.getcwd(), 'images', 'MemoSyncIcon.png')
         self.Layout = BoxLayout(orientation='vertical')
+        if os.path.exists(os.path.join(os.getcwd(), 'previous_ip.txt')):
+            text = open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'r', encoding='utf-8').read()
+        else:
+            text = ''
         self.TextFiled = MDTextField()
         self.TextFiled.size = (50, 20)
+        self.TextFiled.font_size = 50
         self.TextFiled.background_color = '#3d3d3d'
         self.TextFiled.foreground_color = '#FFFFFF'
         self.TextFiled.theme_height = 'Custom'
         self.TextFiled.theme_width = 'Custom'
         self.TextFiled.width = 200
         self.TextFiled.height = 80
+        self.TextFiled.hint_text = '対象のiPを入力してください...'
+        self.TextFiled.font_name_hint_text = '_ja-JP'
+        self.TextFiled.text = text
+        self.TextFiled.helper_text_mode = 'on_focus'
         self.Layout.add_widget(self.TextFiled)
         self.Btn = _MDFlatButton(text='送信する')
         self.Btn.theme_width = 'Custom'
@@ -311,24 +319,35 @@ class ClipboardShare(MDApp):
 
     @mainthread
     def auto_get_and_send_clipboard(self):
-        SendText(host='127.0.0.1', text=clipboard.Clipboard.paste())
-        SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
+        if clipboard.Clipboard.paste() != '':
+            if clipboard.Clipboard.paste() != '\uFEFF':
+                SendText(host='127.0.0.1', text=clipboard.Clipboard.paste())
+                if self.TextFiled.text != '':
+                    SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
 
     @mainthread
     def add_list(self):
         clip = clipboard.Clipboard.paste()
-        if clip != '' or clip != '\uFEFF':
-            if clip != self.ClipText:
-                self.ClipText = clip
-                SendText(host=self.TextFiled.text, text=clip)
-                text = _MDListsWidget(text=clip)
-                text.text_color = '#FFFFFF'
-                text.font_size = 500
-                text.width = 500
-                text.height = 200
-                text.bind(on_press=lambda click: self.copy_text(text))
-                self.ViewList.set_widget(widget=text)
-                _was_get_list.append(clip)
+        if clipboard.Clipboard.paste() != '':
+            if clip != '\uFEFF':
+                if clip != self.ClipText:
+                    self.ClipText = clip
+                    if self.TextFiled.text != '':
+                        SendText(host=self.TextFiled.text, text=clip)
+                    def _pass():
+                        pass
+                    icon = IconLeftWidget(icon='ClipBoardCopy.png')
+                    icon.icon_size = 100
+                    widget = _MDListsWidget(icon, text=clip)
+                    widget.font_style = '_ja-JP'
+                    widget.raw_text = clip
+                    widget.height = 220
+                    widget.width = 500
+                    widget.text_color = '#FFFFFF'
+                    icon.bind(on_press=lambda _: self.copy_text(widget))
+                    widget.bind(on_press=lambda _: self.copy_text(widget))
+                    self.ViewList.set_widget(widget=widget)
+                    _was_get_list.append(clip)
 
     @mainthread
     def copy_text(self, widget):
@@ -356,7 +375,11 @@ class ClipboardShare(MDApp):
             return sock.getsockname()[0]
 
     def send(self):
-        SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
+        if self.TextFiled.text != '':
+            if self.TextFiled.text.startswith('192') and 8 <= len(self.TextFiled.text):
+                with open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'w', encoding='utf-8') as ip:
+                    ip.write(self.TextFiled.text)
+                SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
 
     @mainthread
     def clear(self):
