@@ -125,7 +125,7 @@ class DetectClipboardText(EventDispatcher):
                                 self.dispatch('on_detection')
                             except:
                                 pass
-                            time.sleep(2.5)
+                            time.sleep(0.89)
                         else:
                             for _ in range(2):
                                 try:
@@ -384,9 +384,14 @@ class ClipboardShare(MDApp):
                             if text.split('/')[2][0:4] == 'fxfx':
                                 text = text.replace(text.split('/')[2], 'fxtwitter.com')
                         except IndexError:
-                            text = 'fxtwitter.com'.join(text.split('twitter.com'))
-                            if text.split('/')[2][0:4] == 'fxfx':
-                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                            try:
+                                text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                                if text.split('/')[2][0:4] == 'fxfx':
+                                    text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                            except:
+                                pass
+                        except:
+                            pass
                         clip = '{}'.format(text)
                         clipboard.Clipboard.copy('{}'.format(text))
                     self.ClipText = clip
