@@ -356,7 +356,7 @@ class ClipboardShare(MDApp):
             if '{}'.format(clipboard.Clipboard.paste()) != self.Clip_t:
                 text = '{}'.format(clipboard.Clipboard.paste())
                 try:
-                    if text.split('x.com')[1] == '':
+                    if text.split('/')[2] == 'x.com':
                         text = 'fxtwitter.com'.join(text.split('x.com'))
                     else:
                         text = 'fxtwitter.com'.join(text.split('twitter.com'))
@@ -392,7 +392,7 @@ class ClipboardShare(MDApp):
                     if self.Check_fxtwitter.checkbox.active:
                         text = '{}'.format(clipboard.Clipboard.paste())
                         try:
-                            if text.split('x.com')[1] == '':
+                            if text.split('/')[2] == 'x.com':
                                 text = 'fxtwitter.com'.join(text.split('x.com'))
                             else:
                                 text = 'fxtwitter.com'.join(text.split('twitter.com'))
