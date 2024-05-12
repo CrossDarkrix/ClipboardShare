@@ -342,7 +342,7 @@ class ClipboardShare(MDApp):
         self.CheckiP.bind(on_change_ip=lambda _: self.change_ip_label())
         self.ClipText = ''
         self.Clip_t = ''
-        self.Threads4 = threading.Thread(target=self._on_checkbox, daemon=True)
+        self.Threads4 = threading.Thread(target=asyncio.run, daemon=True, args=(self._on_checkbox(), ))
         self.Threads4.start()
         return self.Screen
 
@@ -354,23 +354,7 @@ class ClipboardShare(MDApp):
             else:
                 with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
                     fx.write('False')
-            if '{}'.format(clipboard.Clipboard.paste()) != self.Clip_t:
-                text = '{}'.format(clipboard.Clipboard.paste())
-                try:
-                    if text.split('/')[2] == 'x.com':
-                        text = 'fxtwitter.com'.join(text.split('x.com'))
-                    else:
-                        text = 'fxtwitter.com'.join(text.split('twitter.com'))
-                    if text.split('/')[2][0:4] == 'fxfx':
-                        text = text.replace(text.split('/')[2], 'fxtwitter.com')
-                except IndexError:
-                    text = 'fxtwitter.com'.join(text.split('twitter.com'))
-                    if text.split('/')[2][0:4] == 'fxfx':
-                        text = text.replace(text.split('/')[2], 'fxtwitter.com')
-                clipboard.Clipboard.copy(text)
-                self.Clip_t = text
-                _was_get_list.append(text)
-            time.sleep(0.1)
+            time.sleep(0.89)
 
     @mainthread
     def change_ip_label(self):
