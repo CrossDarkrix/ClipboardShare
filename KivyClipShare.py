@@ -22,6 +22,8 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.list import MDList, OneLineIconListItem
 from kivymd.uix.list.list import IconLeftWidget
+from kivymd.uix.widget import MDWidget
+from kivymd.uix.selectioncontrol.selectioncontrol import MDCheckbox
 
 WillClosed = [False]
 Threads = [None]
@@ -30,6 +32,21 @@ Threads3 = [None]
 _was_get_list = []
 PortNum = 50618
 clipText = [clipboard.Clipboard.paste()]
+
+
+class _MDLabelCheckBox(MDWidget):
+    def __init__(self, **kwargs):
+        super(_MDLabelCheckBox, self).__init__(**kwargs)
+        self.layout = BoxLayout()
+        self.layout.size = (1300, 80)
+        self.label = _MDLabel()
+        self.checkbox = MDCheckbox()
+        self.checkbox.active = True
+        self.label.font_size = 90
+        self.layout.add_widget(self.label)
+        self.layout.add_widget(self.checkbox)
+        self.add_widget(self.layout)
+
 
 class _StringProperty(StringProperty):
     def __init__(self, **kwargs):
@@ -303,6 +320,18 @@ class ClipboardShare(MDApp):
         self.LabelIP = _MDLabel(text='iP: {}'.format(self.get_ip()))
         self.LabelIP.font_size = 130
         self.Layout.add_widget(self.LabelIP)
+        self.Check_fxtwitter = _MDLabelCheckBox()
+        self.Check_fxtwitter.label.text = 'fxtwitter Mode'
+        self.Layout.add_widget(MDScrollView(self.Check_fxtwitter))
+        if os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
+            _fx = open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'r', encoding='utf-8').read()
+            if _fx == 'True':
+                self.Check_fxtwitter.checkbox.active = True
+            if _fx == 'False':
+                self.Check_fxtwitter.checkbox.active = False
+        if not os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
+            with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                fx.write('True')
         self.Layout.size = (241, 412)
         self.Screen = MDScreen(self.Layout)
         self.Screen.size = (241, 412)
@@ -311,7 +340,36 @@ class ClipboardShare(MDApp):
         self.Detection_clipboard.bind(on_detection=lambda _: self.auto_get_and_send_clipboard())
         self.CheckiP.bind(on_change_ip=lambda _: self.change_ip_label())
         self.ClipText = ''
+        self.Clip_t = ''
+        self.Threads4 = threading.Thread(target=self._on_checkbox, daemon=True)
+        self.Threads4.start()
         return self.Screen
+
+    def _on_checkbox(self):
+        while True:
+            if self.Check_fxtwitter.checkbox.active:
+                with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                    fx.write('True')    
+            else:
+                with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                    fx.write('False')
+            if '{}'.format(clipboard.Clipboard.paste()) != self.Clip_t and '{}'.format(clipboard.Clipboard.paste()) != self.ClipText:
+                text = '{}'.format(clipboard.Clipboard.paste())
+                try:
+                    if text.split('x.com')[1] == '':
+                        text = 'fxtwitter.com'.join(text.split('x.com'))
+                    else:
+                        text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                    if text.split('/')[2][0:4] == 'fxfx':
+                        text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                except IndexError:
+                    text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                    if text.split('/')[2][0:4] == 'fxfx':
+                        text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                clipboard.Clipboard.copy(text)
+                self.Clip_t = text
+                _was_get_list.append(text)
+            time.sleep(0.1)
 
     @mainthread
     def change_ip_label(self):
@@ -331,6 +389,20 @@ class ClipboardShare(MDApp):
         if clipboard.Clipboard.paste() != '':
             if clip != '\uFEFF':
                 if clip != self.ClipText:
+                    if self.Check_fxtwitter.checkbox.active:
+                        text = '{}'.format(clipboard.Clipboard.paste())
+                        try:
+                            if text.split('x.com')[1] == '':
+                                text = 'fxtwitter.com'.join(text.split('x.com'))
+                            else:
+                                text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                            if text.split('/')[2][0:4] == 'fxfx':
+                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                        except IndexError:
+                            text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                            if text.split('/')[2][0:4] == 'fxfx':
+                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                        clip = '{}'.format(text)
                     self.ClipText = clip
                     if self.TextFiled.text != '':
                         SendText(host=self.TextFiled.text, text=clip)
@@ -366,6 +438,10 @@ class ClipboardShare(MDApp):
             pass
         try:
             Threads[0].join(0)
+        except:
+            pass
+        try:
+            self.Threads4.join(0)
         except:
             pass
 
