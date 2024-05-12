@@ -125,6 +125,7 @@ class DetectClipboardText(EventDispatcher):
                                 self.dispatch('on_detection')
                             except:
                                 pass
+                            time.sleep(2.5)
                         else:
                             for _ in range(2):
                                 try:
