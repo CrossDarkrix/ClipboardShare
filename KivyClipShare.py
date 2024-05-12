@@ -442,10 +442,10 @@ class ClipboardShare(MDApp):
             return sock.getsockname()[0]
 
     def send(self):
-        if self.TextFiled.text != '':
-            if self.TextFiled.text.startswith('192') and 8 <= len(self.TextFiled.text):
-                with open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'w', encoding='utf-8') as ip:
-                    ip.write(self.TextFiled.text)
+        if self.TextFiled.text.startswith('192') or self.TextFiled.text.startswith('127') or self.TextFiled.text == '' and 8 <= len(self.TextFiled.text):
+            with open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'w', encoding='utf-8') as ip:
+                ip.write(self.TextFiled.text)
+            if self.TextFiled.text != '':
                 SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
 
     @mainthread
