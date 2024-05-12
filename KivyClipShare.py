@@ -317,9 +317,6 @@ class ClipboardShare(MDApp):
         self.Btn2.line_color = '#FF0808'
         self.Btn2.bind(on_press=lambda _: self.clear())
         self.Layout.add_widget(self.Btn2)
-        self.LabelIP = _MDLabel(text='iP: {}'.format(self.get_ip()))
-        self.LabelIP.font_size = 130
-        self.Layout.add_widget(self.LabelIP)
         self.Check_fxtwitter = _MDLabelCheckBox()
         self.Check_fxtwitter.label.text = 'fxtwitter Mode'
         self.Layout.add_widget(MDScrollView(self.Check_fxtwitter))
@@ -332,6 +329,9 @@ class ClipboardShare(MDApp):
         if not os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
             with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
                 fx.write('True')
+        self.LabelIP = _MDLabel(text='iP: {}'.format(self.get_ip()))
+        self.LabelIP.font_size = 130
+        self.Layout.add_widget(self.LabelIP)
         self.Layout.size = (241, 412)
         self.Screen = MDScreen(self.Layout)
         self.Screen.size = (241, 412)
@@ -353,7 +353,7 @@ class ClipboardShare(MDApp):
             else:
                 with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
                     fx.write('False')
-            if '{}'.format(clipboard.Clipboard.paste()) != self.Clip_t and '{}'.format(clipboard.Clipboard.paste()) != self.ClipText:
+            if '{}'.format(clipboard.Clipboard.paste()) != self.Clip_t:
                 text = '{}'.format(clipboard.Clipboard.paste())
                 try:
                     if text.split('x.com')[1] == '':
@@ -403,6 +403,7 @@ class ClipboardShare(MDApp):
                             if text.split('/')[2][0:4] == 'fxfx':
                                 text = text.replace(text.split('/')[2], 'fxtwitter.com')
                         clip = '{}'.format(text)
+                        clipboard.Clipboard.copy('{}'.format(text))
                     self.ClipText = clip
                     if self.TextFiled.text != '':
                         SendText(host=self.TextFiled.text, text=clip)
