@@ -8,13 +8,13 @@ import sys
 import time
 import threading
 
-from PySide6.QtCore import (QByteArray, QMetaObject, QRect,
-                            QSize, Qt, Signal, Slot, QObject, QTimer)
-from PySide6.QtGui import (QFont, QIcon,
-                           QImage, QPixmap, QStandardItemModel, QStandardItem, QClipboard)
-from PySide6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QPushButton, QPlainTextEdit, QCompleter, QLabel)
+from PySide6.QtCore import (QByteArray, QMetaObject, QRect, QSize, Qt, Signal, Slot, QObject, QTimer)
+from PySide6.QtGui import (QFont, QIcon, QImage, QPixmap, QStandardItemModel, QStandardItem)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QLineEdit, QMainWindow, QPushButton, QPlainTextEdit, QCompleter, QLabel)
 
 WillClosed = [False]
+PortNum = 50618
+
 
 class GetLatestiP(QObject):
     textSignal = Signal(str)
@@ -34,6 +34,7 @@ class GetLatestiP(QObject):
                 self.ip[0] = ip
                 self.textSignal.emit(ip)
 
+
 class ReceiveClipboardText(QObject):
     textSignal = Signal(str)
     def __init__(self):
@@ -46,7 +47,7 @@ class ReceiveClipboardText(QObject):
     async def setClip(self):
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.s.bind(('0.0.0.0', 50618))
+            self.s.bind(('0.0.0.0', PortNum))
             self.s.listen(100)
             while not WillClosed[0]:
                 full_data = b''
@@ -66,6 +67,7 @@ class ReceiveClipboardText(QObject):
         except:
             pass
 
+
 class SendText(object):
     def __init__(self, host, text):
         self.host = host
@@ -79,11 +81,12 @@ class SendText(object):
                 pass
 
     async def send(self, text):
-        _, writer = await asyncio.open_connection(self.host, 50618) # reader, writer = await asyncio.open_connection(self.host, 50618)
+        _, writer = await asyncio.open_connection(self.host, PortNum) # reader, writer = await asyncio.open_connection(self.host, PortNum)
         writer.write(text.encode('utf-8'))
         await writer.drain()
         writer.close()
         await writer.wait_closed()
+
 
 class MainWindowwView(QMainWindow):
     def __init__(self, parent=None):
@@ -94,6 +97,7 @@ class MainWindowwView(QMainWindow):
 
     def closeEvent(self, event):
         WillClosed[0] = True
+
 
 class HistoryURLEditModel(QStandardItemModel):
     def __init__(self, parent=None):
@@ -116,6 +120,7 @@ class HistoryURLEditModel(QStandardItemModel):
         except:
             pass
 
+
 class AutoComplete(QCompleter):
     def __init__(self, parent=None):
         super(AutoComplete, self).__init__(parent)
@@ -124,11 +129,12 @@ class AutoComplete(QCompleter):
         self.model().search(path)
         return super(AutoComplete, self).splitPath(path)
 
+
 class ClipGet(object):
     def setupUi(self, MemoPad):
         if not MemoPad.objectName():
             MemoPad.setObjectName(u"MemoPad")
-        MemoPad.resize(241, 412)
+        MemoPad.resize(241, 462)
         font = QFont()
         font.setFamilies([u"Arial"])
         MemoPad.setFont(font)
@@ -158,8 +164,25 @@ class ClipGet(object):
         self.deleteButton.clicked.connect(self.delete_clipboard)
         self.ipaddress_view = QLabel(MemoPad)
         self.ipaddress_view.setObjectName(u"ipaddress_view")
-        self.ipaddress_view.setGeometry(QRect(10, 370, 221, 31))
-        self.clipboard = QClipboard(MemoPad)
+        self.ipaddress_view.setGeometry(QRect(10, 420, 221, 31))
+        if not os.path.exists(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt')):
+            os.makedirs(os.path.join(os.path.expanduser('~'), '.CLipShareSetting'), exist_ok=True)
+            with open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt'), 'w', encoding='utf-8') as q:
+                q.write('True')
+        try:
+            state = open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt'), 'r', encoding='utf-8').read()
+        except:
+            state = 'True'
+        self.fxtwitter_mode = QCheckBox(MemoPad)
+        self.fxtwitter_mode.setGeometry(QRect(10, 371, 221, 38))
+        self.fxtwitter_mode.setStyleSheet(u"QCheckBox{background: #3d3d3d; color: Red;}")
+        self.fxtwitter_mode.setFont(font1)
+        self.fxtwitter_mode.setText(' FxTwitter mode')
+        if state == 'False':
+            self.fxtwitter_mode.setCheckState(Qt.CheckState.Unchecked)
+        else:
+            self.fxtwitter_mode.setCheckState(Qt.CheckState.Checked)
+        self.fxtwitter_mode.clicked.connect(self.save_check_state)
         font2 = QFont()
         font2.setFamilies([u"Arial"])
         font2.setPointSize(17)
@@ -205,6 +228,18 @@ class ClipGet(object):
         if text != '':
             QApplication.clipboard().setText(text)
 
+    def save_check_state(self):
+        if not os.path.exists(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt')):
+            os.makedirs(os.path.join(os.path.expanduser('~'), '.CLipShareSetting'), exist_ok=True)
+            with open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt'), 'w', encoding='utf-8') as q:
+                q.write('True')
+        if self.fxtwitter_mode.checkState() == Qt.CheckState.Unchecked:
+            with open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt'), 'w', encoding='utf-8') as q:
+                q.write('False')
+        if self.fxtwitter_mode.checkState() == Qt.CheckState.Checked:
+            with open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt'), 'w', encoding='utf-8') as q:
+                q.write('True')
+
     def delete_clipboard(self):
         QApplication.clipboard().setText('')
         self.ClipHistory.setPlainText('')
@@ -234,8 +269,42 @@ class ClipGet(object):
             l.append(_l + 1)
             time.sleep(5)
 
+    def checkTwitter(self, text):
+        try:
+            if text.split('/')[2] == 'x.com':
+                return True
+            elif text.split('/')[2] == 'twitter.com':
+                return True
+            else:
+                return False
+        except:
+            return False
+
     def append_clip(self):
         if QApplication.clipboard().text() != '':
+            if self.fxtwitter_mode.isChecked():
+                if self.checkTwitter(QApplication.clipboard().text()):
+                    try:
+                        text = QApplication.clipboard().text().replace(QApplication.clipboard().text().split('/')[2], 'fxtwitter.com')
+                        if text.split('/')[2][0:4] == 'fxfx':
+                            text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                        QApplication.clipboard().setText(text)
+                    except IndexError:
+                        try:
+                            text = QApplication.clipboard().text().replace(QApplication.clipboard().text().split('/')[2], 'fxtwitter.com')
+                            if text.split('/')[2][0:4] == 'fxfx':
+                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                            QApplication.clipboard().setText(text)
+                        except:
+                            text = ''
+                    except:
+                        text = ''
+                else:
+                    text = '{}'.format(QApplication.clipboard().text())
+                if self.OldClip[0] != text:
+                    self.ClipHistory.appendPlainText(text)
+                    self.OldClip[0] = text
+                    threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), text,)).start()
             if self.OldClip[0] != QApplication.clipboard().text():
                 self.ClipHistory.appendPlainText(QApplication.clipboard().text())
                 self.OldClip[0] = QApplication.clipboard().text()
@@ -248,6 +317,7 @@ class ClipGet(object):
         MemoPad.setWindowTitle('Get Clip')
         self.Find.setPlaceholderText('Please set IP Address')
 
+
 def main():
     app = QApplication(sys.argv)
     main_window = MainWindowwView()
@@ -256,6 +326,7 @@ def main():
     main_window.setFixedSize(main_window.size())
     main_window.show()
     sys.exit(app.exec())
+
 
 if __name__ == '__main__':
     if sys.platform == 'linux':
