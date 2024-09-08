@@ -24,5 +24,6 @@
 </div>
 
 <h3 align="center">
-<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix//ClipboardShare/master/Images/Preview.png"></a>
+<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix/ClipboardShare/master/Images/Preview.png"></a>
+<a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix/ClipboardShare/master/Images/Preview2.png"></a>
 </h3>
