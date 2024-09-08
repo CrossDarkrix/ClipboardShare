@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Version 3.0b
+# Version 3.2b
 
 import asyncio
 import os
 import socket
 import time
 import threading
+from kivy.lang import Builder
 from kivy.core import clipboard
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import mainthread
@@ -17,13 +18,12 @@ from kivy.properties import StringProperty
 from kivymd.app import MDApp
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.screen import MDScreen
-from kivymd.uix.textfield import MDTextField
 from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.list import MDList, OneLineIconListItem
 from kivymd.uix.list.list import IconLeftWidget
 from kivymd.uix.widget import MDWidget
 from kivymd.uix.selectioncontrol.selectioncontrol import MDCheckbox
+from kivymd.uix.menu import MDDropdownMenu
 
 WillClosed = [False]
 Threads = [None]
@@ -32,20 +32,111 @@ Threads3 = [None]
 _was_get_list = []
 PortNum = 50618
 clipText = [clipboard.Clipboard.paste()]
+allow_bk = [True]
+out_thread = []
+if_check1 = [False]
+if_check2 = [False]
+
+
+class BackgroundAllow(object):
+    def __init__(self, allow):
+        if allow:
+            self.thread = threading.Thread(target=self.work)
+            out_thread.append(self.thread)
+            self.start()
+        else:
+            allow_bk[0] = False
+            for o in out_thread:
+                try:
+                    o.join(0)
+                except:
+                    pass
+
+    def work(self):
+        while allow_bk[0]:
+            if not allow_bk:
+                break
+            time.sleep(0.1)
+
+    def start(self):
+        self.thread.start()
 
 
 class _MDLabelCheckBox(MDWidget):
     def __init__(self, **kwargs):
         super(_MDLabelCheckBox, self).__init__(**kwargs)
         self.layout = BoxLayout()
-        self.layout.size = (1300, 80)
+        self.layout.size = (1300, 100)
         self.label = _MDLabel()
         self.checkbox = MDCheckbox()
-        self.checkbox.active = True
-        self.label.font_size = 90
+        if not os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
+            with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                fx.write('False')
+            if_check1[0] = False
+            self.checkbox.active = False
+        else:
+            _fx = open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'r', encoding='utf-8').read()
+            if _fx == 'True':
+                if_check1[0] = True
+                self.checkbox.active = True
+            if _fx == 'False':
+                if_check1[0] = False
+                self.checkbox.active = False
+        self.label.font_size = 75
         self.layout.add_widget(self.label)
         self.layout.add_widget(self.checkbox)
+        self.label.text = 'fxtwitterモード'
+        self.checkbox.bind(on_press=lambda _x: self._on_checkbox())
         self.add_widget(self.layout)
+
+    def _on_checkbox(self):
+        if self.checkbox.active:
+            with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                fx.write('True')
+            if_check1[0] = True
+        else:
+            with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
+                fx.write('False')
+            if_check1[0] = False
+
+
+class _MDLabelCheckBox2(MDWidget):
+    def __init__(self, **kwargs):
+        super(_MDLabelCheckBox2, self).__init__(**kwargs)
+        self.layout = BoxLayout()
+        self.layout.size = (1310, 80)
+        self.label = _MDLabel()
+        self.checkbox = MDCheckbox()
+        if os.path.exists(os.path.join(os.getcwd(), 'allow_background_setting.txt')):
+            _fx2 = open(os.path.join(os.getcwd(), 'allow_background_setting.txt'), 'r', encoding='utf-8').read()
+            if _fx2 == 'True':
+                self.checkbox.active = True
+                if_check2[0] = True
+            if _fx2 == 'False':
+                self.checkbox.active = False
+                if_check2[0] = False
+        if not os.path.exists(os.path.join(os.getcwd(), 'allow_background_setting.txt')):
+            with open(os.path.join(os.getcwd(), 'allow_background_setting.txt'), 'w', encoding='utf-8') as ff:
+                ff.write('False')
+            if_check2[0] = False
+            self.checkbox.active = False
+        self.label.font_size = 47
+        self.layout.add_widget(self.label)
+        self.layout.add_widget(self.checkbox)
+        self.label.text = 'バックグラウンド動作の許可'
+        self.checkbox.bind(on_press=lambda _x: self._on_check())
+        self.add_widget(self.layout)
+
+    @mainthread
+    def _on_check(self):
+        if self.checkbox.active:
+            with open(os.path.join(os.getcwd(), 'allow_background_setting.txt'), 'w', encoding='utf-8') as ff:
+                ff.write('True')
+            BackgroundAllow(True)
+        else:
+            with open(os.path.join(os.getcwd(), 'allow_background_setting.txt'), 'w', encoding='utf-8') as ff:
+                ff.write('False')
+            BackgroundAllow(False)
 
 
 class _StringProperty(StringProperty):
@@ -85,6 +176,8 @@ class _MDLabel(MDLabel):
 class _MDListWidget(MDList):
     def __init__(self, **kwargs):
         super(_MDListWidget, self).__init__(**kwargs)
+        self.specific_text_color = [0, 0, 0, 0]
+        self.size = (50, 100)
         self.widget_list = []
 
     def set_widget(self, widget):
@@ -106,21 +199,21 @@ class DetectClipboardText(EventDispatcher):
     def __init__(self, **kwargs):
         super(DetectClipboardText, self).__init__(**kwargs)
         self.register_event_type('on_detection')
-        _thread = threading.Thread(target=self.detect, daemon=True)
+        _thread = threading.Thread(target=asyncio.run, daemon=True, args=(self.detect(), ))
         Threads2[0] = _thread
         _thread.start()
 
     def on_detection(self):
         pass
 
-    def detect(self):
-        while not WillClosed[0]:
-            if clipboard.Clipboard.paste() != '': # クリップボードの中が空白か
-                if clipboard.Clipboard.paste() != '\uFEFF': # クリップボードの中が空白文字か
-                    if clipboard.Clipboard.paste() != clipText[0]: # クリップボードの中が前回登録した文字列か
-                        if self.string_detect(clipboard.Clipboard.paste()): # クリップボードの中が過去に保存されていたか
-                            clipText[0] = clipboard.Clipboard.paste() # コピーした内容の外部保存
-                            _was_get_list.append(clipboard.Clipboard.paste()) # すでに登録した文字列のリスト
+    async def detect(self):
+        while True:
+            if '{}'.format(clipboard.Clipboard.paste()) != '': # クリップボードの中が空白か
+                if '{}'.format(clipboard.Clipboard.paste()) != '\uFEFF': # クリップボードの中が空白文字か
+                    if '{}'.format(clipboard.Clipboard.paste()) != clipText[0]: # クリップボードの中が前回登録した文字列か
+                        if self.string_detect('{}'.format(clipboard.Clipboard.paste())): # クリップボードの中が過去に保存されていたか
+                            clipText[0] = '{}'.format(clipboard.Clipboard.paste()) # コピーした内容の外部保存
+                            _was_get_list.append('{}'.format(clipboard.Clipboard.paste())) # すでに登録した文字列のリスト
                             try:
                                 self.dispatch('on_detection')
                             except:
@@ -129,7 +222,7 @@ class DetectClipboardText(EventDispatcher):
                         else:
                             for _ in range(2):
                                 try:
-                                    _was_get_list.remove(clipboard.Clipboard.paste())
+                                    _was_get_list.remove('{}'.format(clipboard.Clipboard.paste()))
                                 except IndexError:
                                     pass
                                 except ValueError:
@@ -157,18 +250,18 @@ class DetectChange_iP(EventDispatcher):
         super(DetectChange_iP, self).__init__(**kwargs)
         self.register_event_type('on_change_ip')
         self.ip = ''
-        _thread = threading.Thread(target=self.check, daemon=True)
+        _thread = threading.Thread(target=asyncio.run, daemon=True, args=(self.check(), ))
         Threads3[0] = _thread
         _thread.start()
 
     def on_change_ip(self):
         pass
 
-    def check(self):
+    async def check(self):
         while not WillClosed[0]:
             if self.ip != self.check_ip():
                 try:
-                    self.dispatch('on_change_ip')
+                    await self.dispatch('on_change_ip')
                 except:
                     pass
                 self.ip = self.check_ip()
@@ -247,126 +340,165 @@ class SendText(object):
         await writer.wait_closed()
 
 
+kivy_lang_sheet = """
+<_MDFlatButton>:   
+<_MDListWidget>:
+<_MDLabel>:
+Screen:
+    size: (241, 412)
+    BoxLayout:
+        id: Layout
+        orientation: 'vertical'
+        size: (241, 412)
+        MDTextField:
+            id: TextFiled
+            size: (50, 20)
+            font_size: 50
+            background_color: '#3d3d3d'
+            foreground_color: '#FFFFFF'
+            theme_height: 'Custom'
+            theme_width: 'Custom'
+            width: 200
+            height: 80
+            hint_text: '対象のiPを入力してください...'
+            font_name_hint_text: '_ja-JP'
+            helper_text_mode: 'on_focus'
+            on_focus: if self.focus: app.load_menu()
+        _MDFlatButton:
+            id: Btn1_send
+            text: '送信する'
+            theme_width: 'Custom'
+            theme_height: 'Custom'
+            theme_font_size: 'Custom'
+            theme_line_height: 'Custom'
+            pos: (0, 100)
+            color: '#FF0808'
+            width: 200
+            height: 400
+            font_size: 130
+            outline_color: '#FF0808'
+            outline_width: 3
+            line_width: 2
+            line_color: '#FF0808'
+            on_press: app.send()
+        MDScrollView:
+            id: ListView
+            font_name: '_ja-JP'
+            size: (50, 500)
+            pos: (0, 500)
+        _MDFlatButton:
+            id: Btn2
+            text: '内容を削除する'
+            theme_width: 'Custom'
+            theme_height: 'Custom'
+            theme_font_size: 'Custom'
+            color: '#FF0808'
+            width: 200
+            height: 400
+            font_size: 130
+            outline_color: '#FF0808'
+            outline_width: 3
+            line_width: 2
+            line_color: '#FF0808'
+            on_press: app.clear()
+        MDScrollView:
+            id: Check_fxtwitter
+        MDScrollView:
+            id: check_background
+        _MDLabel:
+            id: LabelIP
+            text: 'iP: {}'.format(app.get_ip())
+            font_size: 130
+"""
+
+
+
 class ClipboardShare(MDApp):
-    def build(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.font_name = '_ja-JP'
+        self.Screen = Builder.load_string(kivy_lang_sheet)
         if platform == 'android':
             import android
-            android.start_service(title='ClipShare Service', description='Monitoring Clipboard Service', arg='running')
+            android.start_service(title='ClipShare', description='Monitoring Clipboard Service', arg='running')
         self.ReceiveClip = ReceiveClipboardText()
         self.Detection_clipboard = DetectClipboardText()
+        self.WIDGET = _MDListWidget()
         self.CheckiP = DetectChange_iP()
         self.theme_cls.theme_style = 'Dark'
         self.theme_cls.primary_palette = 'Red'
         self.title = 'ClipShare'
         self.icon = os.path.join(os.getcwd(), 'images', 'MemoSyncIcon.png')
-        self.Layout = BoxLayout(orientation='vertical')
-        if os.path.exists(os.path.join(os.getcwd(), 'previous_ip.txt')):
-            text = open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'r', encoding='utf-8').read()
+        if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
+            with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
+                ip.write('192.168.1.0, ')
         else:
-            text = ''
-        self.TextFiled = MDTextField()
-        self.TextFiled.size = (50, 20)
-        self.TextFiled.font_size = 50
-        self.TextFiled.background_color = '#3d3d3d'
-        self.TextFiled.foreground_color = '#FFFFFF'
-        self.TextFiled.theme_height = 'Custom'
-        self.TextFiled.theme_width = 'Custom'
-        self.TextFiled.width = 200
-        self.TextFiled.height = 80
-        self.TextFiled.hint_text = '対象のiPを入力してください...'
-        self.TextFiled.font_name_hint_text = '_ja-JP'
-        self.TextFiled.text = text
-        self.TextFiled.helper_text_mode = 'on_focus'
-        self.Layout.add_widget(self.TextFiled)
-        self.Btn = _MDFlatButton(text='送信する')
-        self.Btn.theme_width = 'Custom'
-        self.Btn.theme_height = 'Custom'
-        self.Btn.theme_font_size = 'Custom'
-        self.Btn.theme_line_height = 'Custom'
-        self.Btn.pos = (0, 100)
-        self.Btn.color = '#FF0808'
-        self.Btn.width = 200
-        self.Btn.height = 400
-        self.Btn.font_size = 200
-        self.Btn.outline_color = '#FF0808'
-        self.Btn.outline_width = 3
-        self.Btn.line_width = 2
-        self.Btn.line_color = '#FF0808'
-        self.Btn.bind(on_press=lambda _: self.send())
-        self.Layout.add_widget(self.Btn)
-        self.ViewList = _MDListWidget()
-        self.ViewList.specific_text_color = [0, 0, 0, 0]
-        self.ViewList.size = (50, 100)
-        self.ViewList.font_name = '_ja-JP'
-        self.ListView = _MDScrollView(self.ViewList)
-        self.ListView.font_name = '_ja-JP'
-        self.ListView.size = (50, 500)
-        self.ListView.pos = (0, 500)
-        self.Layout.add_widget(self.ListView)
-        self.Btn2 = _MDFlatButton(text='内容を削除する')
-        self.Btn2.theme_width = 'Custom'
-        self.Btn2.theme_height = 'Custom'
-        self.Btn2.theme_font_size = 'Custom'
-        self.Btn2.color = '#FF0808'
-        self.Btn2.width = 200
-        self.Btn2.height = 400
-        self.Btn2.font_size = 130
-        self.Btn2.outline_color = '#FF0808'
-        self.Btn2.outline_width = 3
-        self.Btn2.line_width = 2
-        self.Btn2.line_color = '#FF0808'
-        self.Btn2.bind(on_press=lambda _: self.clear())
-        self.Layout.add_widget(self.Btn2)
-        self.Check_fxtwitter = _MDLabelCheckBox()
-        self.Check_fxtwitter.label.text = 'fxtwitter Mode'
-        self.Layout.add_widget(MDScrollView(self.Check_fxtwitter))
-        if os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
-            _fx = open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'r', encoding='utf-8').read()
-            if _fx == 'True':
-                self.Check_fxtwitter.checkbox.active = True
-            if _fx == 'False':
-                self.Check_fxtwitter.checkbox.active = False
-        if not os.path.exists(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt')):
-            with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
-                fx.write('True')
-        self.LabelIP = _MDLabel(text='iP: {}'.format(self.get_ip()))
-        self.LabelIP.font_size = 130
-        self.Layout.add_widget(self.LabelIP)
-        self.Layout.size = (241, 412)
-        self.Screen = MDScreen(self.Layout)
-        self.Screen.size = (241, 412)
+            text_ip = ', '.join(list(set(open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', '))))
+            with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as fw:
+                fw.write(text_ip)
+        self.text_menu = MDDropdownMenu(caller=self.Screen.ids['TextFiled'])
+        self.text_menu.position = 'top'
+        self.text_menu.width = 400
+        self.Detection_clipboard.bind(on_detection=lambda _c: self.auto_get_and_send_clipboard())
+        self.ReceiveClip.bind(on_receive=lambda _li: self.add_list())
+        self.CheckiP.bind(on_change_ip=lambda _ip: self.change_ip_label())
         self.bind(on_stop=lambda _: self.closed())
-        self.ReceiveClip.bind(on_receive=lambda _: self.add_list())
-        self.Detection_clipboard.bind(on_detection=lambda _: self.auto_get_and_send_clipboard())
-        self.CheckiP.bind(on_change_ip=lambda _: self.change_ip_label())
         self.ClipText = ''
-        self.Clip_t = ''
-        self.Threads4 = threading.Thread(target=asyncio.run, daemon=True, args=(self._on_checkbox(), ))
-        self.Threads4.start()
+        self.Screen.ids['ListView'].add_widget(self.WIDGET)
+        self.Screen.ids['Check_fxtwitter'].add_widget(_MDLabelCheckBox())
+        self.Screen.ids['check_background'].add_widget(_MDLabelCheckBox2())
+
+    def build(self):
         return self.Screen
 
-    def _on_checkbox(self):
-        while True:
-            if self.Check_fxtwitter.checkbox.active:
-                with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
-                    fx.write('True')    
-            else:
-                with open(os.path.join(os.getcwd(), 'fxtwitter_mode_setting.txt'), 'w', encoding='utf-8') as fx:
-                    fx.write('False')
-            time.sleep(0.89)
-
     @mainthread
-    def change_ip_label(self):
-        self.LabelIP.text = 'iP: {}'.format(self.get_ip())
+    def load_menu(self):
+        if 9 <= len(self.Screen.ids['TextFiled'].text) <= 15:
+            if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
+                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
+                    ip.write('192.168.1.0, ')
+            else:
+                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'a', encoding='utf-8') as ip:
+                    ip.write(', {}, '.format(self.Screen.ids['TextFiled'].text))
+                    text_ip = ', '.join(list(set(open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', '))))
+                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as fw:
+                        fw.write(text_ip)
+        self.text_menu.items = self.sort_dict([{'text': ips, 'viewclass': 'OneLineListItem', 'on_release': lambda text=ips: self.menu_callback(text)} for ips in open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', ') if ips != ''])
+        self.text_menu.open()
+
+    def menu_callback(self, text):
+        self.Screen.ids['TextFiled'].text = text
+        self.text_menu.dismiss()
 
     @mainthread
     def auto_get_and_send_clipboard(self):
+        if if_check1[0]:
+            text = '{}'.format(clipboard.Clipboard.paste())
+            try:
+                if text.split('/')[2] == 'x.com':
+                    text = 'fxtwitter.com'.join(text.split('x.com'))
+                else:
+                    text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                if text.split('/')[2][0:4] == 'fxfx':
+                    text = text.replace(text.split('/')[2], 'fxtwitter.com')
+            except IndexError:
+                try:
+                    text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                    if text.split('/')[2][0:4] == 'fxfx':
+                        text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                except:
+                    pass
+            except:
+                pass
+            clipboard.Clipboard.copy('{}'.format(text))
         if clipboard.Clipboard.paste() != '':
             if clipboard.Clipboard.paste() != '\uFEFF':
                 SendText(host='127.0.0.1', text=clipboard.Clipboard.paste())
-                if self.TextFiled.text != '':
-                    SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
+                if self.Screen.ids['TextFiled'].text != '':
+                    SendText(host=self.Screen.ids['TextFiled'].text, text=clipboard.Clipboard.paste())
+
+    def sort_dict(self, data: list[dict]) -> list[dict]:
+        return list({element['text']: element for element in data}.values())
 
     @mainthread
     def add_list(self):
@@ -374,7 +506,7 @@ class ClipboardShare(MDApp):
         if clipboard.Clipboard.paste() != '':
             if clip != '\uFEFF':
                 if clip != self.ClipText:
-                    if self.Check_fxtwitter.checkbox.active:
+                    if if_check1[0]:
                         text = '{}'.format(clipboard.Clipboard.paste())
                         try:
                             if text.split('/')[2] == 'x.com':
@@ -395,8 +527,8 @@ class ClipboardShare(MDApp):
                         clip = '{}'.format(text)
                         clipboard.Clipboard.copy('{}'.format(text))
                     self.ClipText = clip
-                    if self.TextFiled.text != '':
-                        SendText(host=self.TextFiled.text, text=clip)
+                    if self.Screen.ids['TextFiled'].text != '':
+                        SendText(host=self.Screen.ids['TextFiled'].text, text=clip)
                     def _pass():
                         pass
                     icon = IconLeftWidget(icon='ClipBoardCopy.png')
@@ -409,12 +541,12 @@ class ClipboardShare(MDApp):
                     widget.text_color = '#FFFFFF'
                     icon.bind(on_press=lambda _: self.copy_text(widget))
                     widget.bind(on_press=lambda _: self.copy_text(widget))
-                    self.ViewList.set_widget(widget=widget)
+                    self.WIDGET.set_widget(widget=widget)
                     _was_get_list.append(clip)
 
     @mainthread
     def copy_text(self, widget):
-        clipboard.Clipboard.copy(self.ViewList.get_text(widget=widget))
+        clipboard.Clipboard.copy(self.WIDGET.get_text(widget=widget))
 
     @mainthread
     def closed(self):
@@ -431,10 +563,6 @@ class ClipboardShare(MDApp):
             Threads[0].join(0)
         except:
             pass
-        try:
-            self.Threads4.join(0)
-        except:
-            pass
 
     def get_ip(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -442,15 +570,20 @@ class ClipboardShare(MDApp):
             return sock.getsockname()[0]
 
     def send(self):
-        if self.TextFiled.text.startswith('192') or self.TextFiled.text.startswith('127') or self.TextFiled.text == '' and 8 <= len(self.TextFiled.text):
-            with open(os.path.join(os.getcwd(), 'previous_ip.txt'), 'w', encoding='utf-8') as ip:
-                ip.write(self.TextFiled.text)
-            if self.TextFiled.text != '':
-                SendText(host=self.TextFiled.text, text=clipboard.Clipboard.paste())
+        if self.Screen.ids['TextFiled'].text.startswith('192') or self.Screen.ids['TextFiled'].text.startswith('127') or self.Screen.ids['TextFiled'].text == '' and 8 <= len(self.Screen.ids['TextFiled'].text):
+            if self.Screen.ids['TextFiled'].text != '':
+                SendText(host=self.Screen.ids['TextFiled'].text, text=clipboard.Clipboard.paste())
+        if 9 <= len(self.Screen.ids['TextFiled'].text) <= 15:
+            if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
+                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
+                    ip.write('192.168.1.0, ')
+            else:
+                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'a', encoding='utf-8') as ip:
+                    ip.write(', {}, '.format(self.Screen.ids['TextFiled'].text))
 
     @mainthread
     def clear(self):
-        self.ViewList.delete_all()
+        self.WIDGET.delete_all()
         clipboard.Clipboard.copy('\uFEFF')
         _was_get_list.clear()
 
