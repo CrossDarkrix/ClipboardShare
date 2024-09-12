@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Version 3.2b
+# Version 3.3b
 
 import asyncio
 import os
@@ -209,7 +209,7 @@ class DetectClipboardText(EventDispatcher):
     async def detect(self):
         while True:
             if '{}'.format(clipboard.Clipboard.paste()) != '': # クリップボードの中が空白か
-                if '{}'.format(clipboard.Clipboard.paste()) != '\uFEFF': # クリップボードの中が空白文字か
+                if '{}'.format(clipboard.Clipboard.paste()) != '\u200B': # クリップボードの中が空白文字か
                     if '{}'.format(clipboard.Clipboard.paste()) != clipText[0]: # クリップボードの中が前回登録した文字列か
                         if self.string_detect('{}'.format(clipboard.Clipboard.paste())): # クリップボードの中が過去に保存されていたか
                             clipText[0] = '{}'.format(clipboard.Clipboard.paste()) # コピーした内容の外部保存
@@ -354,6 +354,7 @@ Screen:
             id: TextFiled
             size: (50, 20)
             font_size: 50
+            halign: 'center'
             background_color: '#3d3d3d'
             foreground_color: '#FFFFFF'
             theme_height: 'Custom'
@@ -367,6 +368,7 @@ Screen:
         _MDFlatButton:
             id: Btn1_send
             text: '送信する'
+            halign: 'center'
             theme_width: 'Custom'
             theme_height: 'Custom'
             theme_font_size: 'Custom'
@@ -383,12 +385,14 @@ Screen:
             on_press: app.send()
         MDScrollView:
             id: ListView
+            halign: 'center'
             font_name: '_ja-JP'
             size: (50, 500)
             pos: (0, 500)
         _MDFlatButton:
             id: Btn2
             text: '内容を削除する'
+            halign: 'center'
             theme_width: 'Custom'
             theme_height: 'Custom'
             theme_font_size: 'Custom'
@@ -402,12 +406,15 @@ Screen:
             line_color: '#FF0808'
             on_press: app.clear()
         MDScrollView:
+            halign: 'center'
             id: Check_fxtwitter
         MDScrollView:
+            halign: 'center'
             id: check_background
         _MDLabel:
             id: LabelIP
-            text: 'iP: {}'.format(app.get_ip())
+            halign: 'center'
+            text: '{}'.format(app.get_ip())
             font_size: 130
 """
 
@@ -441,7 +448,6 @@ class ClipboardShare(MDApp):
         self.text_menu.width = 400
         self.Detection_clipboard.bind(on_detection=lambda _c: self.auto_get_and_send_clipboard())
         self.ReceiveClip.bind(on_receive=lambda _li: self.add_list())
-        self.CheckiP.bind(on_change_ip=lambda _ip: self.change_ip_label())
         self.bind(on_stop=lambda _: self.closed())
         self.ClipText = ''
         self.Screen.ids['ListView'].add_widget(self.WIDGET)
@@ -454,17 +460,24 @@ class ClipboardShare(MDApp):
     @mainthread
     def load_menu(self):
         if 9 <= len(self.Screen.ids['TextFiled'].text) <= 15:
-            if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
-                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
-                    ip.write('192.168.1.0, ')
-            else:
-                with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'a', encoding='utf-8') as ip:
-                    ip.write(', {}, '.format(self.Screen.ids['TextFiled'].text))
-                    text_ip = ', '.join(list(set(open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', '))))
-                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as fw:
-                        fw.write(text_ip)
+            if self.count_dot(text=self.Screen.ids['TextFiled'].text):
+                if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
+                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
+                        ip.write('192.168.1.0, ')
+                else:
+                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'a', encoding='utf-8') as ip:
+                        ip.write(', {}, '.format(self.Screen.ids['TextFiled'].text))
+                        text_ip = ', '.join(list(set(open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', '))))
+                        with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as fw:
+                            fw.write(text_ip)
         self.text_menu.items = self.sort_dict([{'text': ips, 'viewclass': 'OneLineListItem', 'on_release': lambda text=ips: self.menu_callback(text)} for ips in open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'r', encoding='utf-8').read().split(', ') if ips != ''])
         self.text_menu.open()
+
+    def count_dot(self, text: str) -> bool:
+        if text.count('.') == 4:
+            return True
+        else:
+            return False
 
     def menu_callback(self, text):
         self.Screen.ids['TextFiled'].text = text
@@ -492,10 +505,8 @@ class ClipboardShare(MDApp):
                 pass
             clipboard.Clipboard.copy('{}'.format(text))
         if clipboard.Clipboard.paste() != '':
-            if clipboard.Clipboard.paste() != '\uFEFF':
-                SendText(host='127.0.0.1', text=clipboard.Clipboard.paste())
-                if self.Screen.ids['TextFiled'].text != '':
-                    SendText(host=self.Screen.ids['TextFiled'].text, text=clipboard.Clipboard.paste())
+            if clipboard.Clipboard.paste() != '\u200B':
+                self.add_list2()
 
     def sort_dict(self, data: list[dict]) -> list[dict]:
         return list({element['text']: element for element in data}.values())
@@ -504,7 +515,7 @@ class ClipboardShare(MDApp):
     def add_list(self):
         clip = clipboard.Clipboard.paste()
         if clipboard.Clipboard.paste() != '':
-            if clip != '\uFEFF':
+            if clip != '\u200B':
                 if clip != self.ClipText:
                     if if_check1[0]:
                         text = '{}'.format(clipboard.Clipboard.paste())
@@ -529,8 +540,47 @@ class ClipboardShare(MDApp):
                     self.ClipText = clip
                     if self.Screen.ids['TextFiled'].text != '':
                         SendText(host=self.Screen.ids['TextFiled'].text, text=clip)
-                    def _pass():
-                        pass
+                    icon = IconLeftWidget(icon='ClipBoardCopy.png')
+                    icon.icon_size = 100
+                    widget = _MDListsWidget(icon, text=clip)
+                    widget.font_style = '_ja-JP'
+                    widget.raw_text = clip
+                    widget.height = 220
+                    widget.width = 500
+                    widget.text_color = '#FFFFFF'
+                    icon.bind(on_press=lambda _: self.copy_text(widget))
+                    widget.bind(on_press=lambda _: self.copy_text(widget))
+                    self.WIDGET.set_widget(widget=widget)
+                    _was_get_list.append(clip)
+
+    def add_list2(self):
+        clip = clipboard.Clipboard.paste()
+        if clipboard.Clipboard.paste() != '':
+            if clip != '\u200B':
+                if clip != self.ClipText:
+                    if if_check1[0]:
+                        text = '{}'.format(clipboard.Clipboard.paste())
+                        try:
+                            if text.split('/')[2] == 'x.com':
+                                text = 'fxtwitter.com'.join(text.split('x.com'))
+                            else:
+                                text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                            if text.split('/')[2][0:4] == 'fxfx':
+                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                        except IndexError:
+                            try:
+                                text = 'fxtwitter.com'.join(text.split('twitter.com'))
+                                if text.split('/')[2][0:4] == 'fxfx':
+                                    text = text.replace(text.split('/')[2], 'fxtwitter.com')
+                            except:
+                                pass
+                        except:
+                            pass
+                        clip = '{}'.format(text)
+                        clipboard.Clipboard.copy('{}'.format(text))
+                    self.ClipText = clip
+                    if self.Screen.ids['TextFiled'].text != '':
+                        SendText(host=self.Screen.ids['TextFiled'].text, text=clip)
                     icon = IconLeftWidget(icon='ClipBoardCopy.png')
                     icon.icon_size = 100
                     widget = _MDListsWidget(icon, text=clip)
@@ -584,7 +634,8 @@ class ClipboardShare(MDApp):
     @mainthread
     def clear(self):
         self.WIDGET.delete_all()
-        clipboard.Clipboard.copy('\uFEFF')
+        # clipboard.Clipboard.copy('\uFEFF')
+        clipboard.Clipboard.copy('\u200B')
         _was_get_list.clear()
 
 
