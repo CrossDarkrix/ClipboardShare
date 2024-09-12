@@ -473,7 +473,7 @@ class ClipboardShare(MDApp):
         self.text_menu.open()
 
     def count_dot(self, text: str) -> bool:
-        if text.count('.') == 4:
+        if text.count('.') == 3:
             return True
         else:
             return False
