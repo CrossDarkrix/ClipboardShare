@@ -354,7 +354,6 @@ Screen:
             id: TextFiled
             size: (50, 20)
             font_size: 50
-            halign: 'center'
             background_color: '#3d3d3d'
             foreground_color: '#FFFFFF'
             theme_height: 'Custom'
