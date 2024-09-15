@@ -336,7 +336,7 @@ Screen:
             on_focus: if self.focus: app.load_menu()
         _MDFlatButton:
             id: Btn1_send
-            text: 'Send'
+            text: 'Send Text'
             halign: 'center'
             theme_width: 'Custom'
             theme_height: 'Custom'
