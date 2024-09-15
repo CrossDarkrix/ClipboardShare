@@ -211,12 +211,12 @@ class DetectClipboardText(EventDispatcher):
 
     async def detect(self):
         while True:
-            if '{}'.format(clipboard.Clipboard.paste()) != '': # クリップボードの中が空白か
-                if '{}'.format(clipboard.Clipboard.paste()) != '\u200B': # クリップボードの中が空白文字か
-                    if '{}'.format(clipboard.Clipboard.paste()) != clipText[0]: # クリップボードの中が前回登録した文字列か
-                        if self.string_detect('{}'.format(clipboard.Clipboard.paste())): # クリップボードの中が過去に保存されていたか
-                            clipText[0] = '{}'.format(clipboard.Clipboard.paste()) # コピーした内容の外部保存
-                            _was_get_list.append('{}'.format(clipboard.Clipboard.paste())) # すでに登録した文字列のリスト
+            if '{}'.format(clipboard.Clipboard.paste()) != '':
+                if '{}'.format(clipboard.Clipboard.paste()) != '\u200B':
+                    if '{}'.format(clipboard.Clipboard.paste()) != clipText[0]:
+                        if self.string_detect('{}'.format(clipboard.Clipboard.paste())):
+                            clipText[0] = '{}'.format(clipboard.Clipboard.paste())
+                            _was_get_list.append('{}'.format(clipboard.Clipboard.paste()))
                             try:
                                 self.dispatch('on_detection')
                             except:
@@ -237,7 +237,7 @@ class DetectClipboardText(EventDispatcher):
             else:
                 time.sleep(0.01)
 
-    def string_detect(self, string_text: str) -> bool: # ２個以上の重複された文字列がないかチェック
+    def string_detect(self, string_text: str) -> bool:
         len_text = 0
         for strings in _was_get_list:
             if strings == string_text:
@@ -330,13 +330,13 @@ Screen:
             theme_width: 'Custom'
             width: 200
             height: 80
-            hint_text: '対象のiPを入力してください...'
+            hint_text: 'select ip adress...'
             font_name_hint_text: '_ja-JP'
             helper_text_mode: 'on_focus'
             on_focus: if self.focus: app.load_menu()
         _MDFlatButton:
             id: Btn1_send
-            text: '送信する'
+            text: 'Send'
             halign: 'center'
             theme_width: 'Custom'
             theme_height: 'Custom'
@@ -360,7 +360,7 @@ Screen:
             pos: (0, 500)
         _MDFlatButton:
             id: Btn2
-            text: '内容を削除する'
+            text: 'All Clear'
             halign: 'center'
             theme_width: 'Custom'
             theme_height: 'Custom'
