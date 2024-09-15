@@ -88,7 +88,7 @@ class _MDLabelCheckBox(MDWidget):
         self.label.font_size = 75
         self.layout.add_widget(self.label)
         self.layout.add_widget(self.checkbox)
-        self.label.text = 'fxtwitterモード'
+        self.label.text = 'fxtwitter Mode'
         self.checkbox.bind(on_press=lambda _x: self._on_checkbox())
         self.add_widget(self.layout)
 
@@ -126,7 +126,7 @@ class _MDLabelCheckBox2(MDWidget):
         self.label.font_size = 47
         self.layout.add_widget(self.label)
         self.layout.add_widget(self.checkbox)
-        self.label.text = 'バックグラウンド動作の許可'
+        self.label.text = 'allow background'
         self.checkbox.bind(on_press=lambda _x: self._on_check())
         self.add_widget(self.layout)
 
