@@ -6,9 +6,9 @@
 <h2 align="center">Python ClipboardShare Tool</h2>
 
 <div>
-	<h2>ビルドに必要なモジュール</h2>
+	<h2>ビルドに必要なモジュール(requirement modules)</h2>
 	<ul>
-		<li>PySide6</li>
+		<li>PySide6(PC) or Kivy and Kivymd(Mobile)</li>
 	</ul>
 </div>
 
@@ -22,6 +22,7 @@
 		<li>※2024年6月6日追記 PC版にもFxTwitterモードを実装しました</li>
 	</ol>
 </div>
+
 
 <h3 align="center">
 <a href="https://github.com/CrossDarkrix/ClipboardShare/"><img width="350px" height="400px" alt="ClipboardSharePreview" src="https://raw.githubusercontent.com/CrossDarkrix/ClipboardShare/master/Images/Preview.png"></a>
