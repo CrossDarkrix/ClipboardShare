@@ -20,6 +20,11 @@ MDBoxLayout:
         title: "EasyFileShare"
         elevation: 3
     MDFloatLayout:
+        MDLabel:
+            color: '#D45D00'
+            id: user_id
+            font_size: 20
+            pos_hint: {"center_x": .6, "center_y": .7}
         MDRoundFlatIconButton:
             id: open
             text: "select Directory"
@@ -32,6 +37,11 @@ MDBoxLayout:
             icon: "arrow-right-bold"
             pos_hint: {"center_x": .7, "center_y": .5}
             on_release: app.on_start_webdav()
+        MDLabel:
+            color: '#D45D00'
+            id: user_pass
+            font_size: 20
+            pos_hint: {"center_x": 1., "center_y": .7}
 '''
 
 
@@ -85,13 +95,15 @@ class EasyFileShare(MDApp):
             self.dialog.open()
 
     def file_manager_open(self):
-        self.file_manager.show(os.path.expanduser('~') or '/')
+        self.file_manager.show(self.home_dir())
         self.manager_open = True
 
     def select_path(self, path: str):
         self.exit_manager()
         if os.path.isdir(path):
             self.Screen.ids['start'].disabled = False
+            self.Screen.ids['user_id'].text = 'User Name: user'
+            self.Screen.ids['user_pass'].text = 'Password: password'
             self.authorizer.add_user('user', 'password', path, perm='elradfmw')
             handler = pyftpdlib.handlers.FTPHandler
             handler.authorizer = self.authorizer
@@ -102,6 +114,12 @@ class EasyFileShare(MDApp):
     def exit_manager(self, *args):
         self.manager_open = False
         self.file_manager.close()
+
+    def home_dir(self):
+        if os.getenv('EXTERNAL_STORAGE') is not None:
+            return os.getenv('EXTERNAL_STORAGE')
+        else:
+            return os.path.expanduser('~')
 
     def events(self, _0, keyboard, _2, _3, _4):
         if keyboard in (1001, 27):
