@@ -46,6 +46,8 @@ class EasyFileShare(MDApp):
             request_permissions(
                 [Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE, Permission.MANAGE_EXTERNAL_STORAGE]
             )
+            import android
+            android.start_service(title='EasyFileShare', description='Monitoring EasyFileShare', arg='running')
         except:
             pass
         self.file_manager = MDFileManager(
@@ -112,4 +114,5 @@ class EasyFileShare(MDApp):
         self.stop()
 
 
-EasyFileShare().run()
+if __name__ == '__main__':
+    EasyFileShare().run()
