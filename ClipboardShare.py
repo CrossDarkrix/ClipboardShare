@@ -3,6 +3,8 @@ import json
 import concurrent.futures
 import os
 import multiprocessing
+import platform
+import pyperclip
 import socket
 import sys
 import time
@@ -134,7 +136,7 @@ class ClipGet(object):
     def setupUi(self, MemoPad):
         if not MemoPad.objectName():
             MemoPad.setObjectName(u"MemoPad")
-        MemoPad.resize(241, 462)
+        MemoPad.resize(241, 482)
         font = QFont()
         font.setFamilies([u"Arial"])
         MemoPad.setFont(font)
@@ -213,6 +215,13 @@ class ClipGet(object):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.connect(('8.8.8.8', 80))
             self.ipaddress_view.setText(sock.getsockname()[0])
+        self.copyright = QLabel(MemoPad)
+        self.copyright.setGeometry(QRect(110, 450, 221, 31))
+        self.copyright.setStyleSheet('QLabel{color: #4f4f4f}')
+        self.copyright.setText('Copyright (c) 2014, Al Sweigart')
+        font3 = QFont()
+        font3.setPointSize(7)
+        self.copyright.setFont(font3)
         self.retranslateUi(MemoPad)
         QMetaObject.connectSlotsByName(MemoPad)
         QApplication.clipboard().dataChanged.connect(self.append_clip)
@@ -226,7 +235,7 @@ class ClipGet(object):
     @Slot(str)
     def setClip(self, text):
         if text != '':
-            QApplication.clipboard().setText(text)
+            pyperclip.copy(text)
 
     def save_check_state(self):
         if not os.path.exists(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting_fxtwitter.txt')):
@@ -241,7 +250,7 @@ class ClipGet(object):
                 q.write('True')
 
     def delete_clipboard(self):
-        QApplication.clipboard().setText('')
+        pyperclip.copy('')
         self.ClipHistory.setPlainText('')
         self.OldClip[0] = ''
 
@@ -251,7 +260,7 @@ class ClipGet(object):
             if WillClosed[0]:
                 break
             try:
-                if self.complete_text != self.Find.text() and 11 <= len(self.Find.text()):
+                if self.complete_text != self.Find.text() and self.count_dot(self.Find.text()):
                     if not os.path.exists(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting.txt')):
                         data = {'id'.format(_l): self.Find.text()}
                         with open(os.path.join(os.path.expanduser('~'), '.CLipShareSetting', 'setting.txt'), 'w', encoding='utf-8') as f:
@@ -267,7 +276,7 @@ class ClipGet(object):
             except:
                 pass
             l.append(_l + 1)
-            time.sleep(5)
+            time.sleep(0.5)
 
     def checkTwitter(self, text):
         try:
@@ -280,31 +289,46 @@ class ClipGet(object):
         except:
             return False
 
+    def count_dot(self, text: str) -> bool:
+        if text.count('.') == 3:
+            return True
+        else:
+            return False
+
     def append_clip(self):
-        if QApplication.clipboard().text() != '':
+        text: str = '{}'.format(QApplication.clipboard().text())
+        if text != '':
             if self.fxtwitter_mode.isChecked():
-                if self.checkTwitter(QApplication.clipboard().text()):
+                if self.checkTwitter(text):
                     try:
-                        text = QApplication.clipboard().text().replace(QApplication.clipboard().text().split('/')[2], 'fxtwitter.com')
+                        if text.split('/')[2] == 'x.com':
+                            text: str = 'fxtwitter.com'.join(text.split('x.com'))
+                        else:
+                            text: str = 'fxtwitter.com'.join(text.split('twitter.com'))
                         if text.split('/')[2][0:4] == 'fxfx':
-                            text = text.replace(text.split('/')[2], 'fxtwitter.com')
-                        QApplication.clipboard().setText(text)
+                            text: str = text.replace(text.split('/')[2], 'fxtwitter.com')
                     except IndexError:
                         try:
-                            text = QApplication.clipboard().text().replace(QApplication.clipboard().text().split('/')[2], 'fxtwitter.com')
+                            text: str = 'fxtwitter.com'.join(text.split('twitter.com'))
                             if text.split('/')[2][0:4] == 'fxfx':
-                                text = text.replace(text.split('/')[2], 'fxtwitter.com')
-                            QApplication.clipboard().setText(text)
+                                text: str = text.replace(text.split('/')[2], 'fxtwitter.com')
                         except:
-                            text = ''
+                            pass
                     except:
-                        text = ''
+                        pass
+                    if platform.system() == "Windows":
+                        pyperclip.copy(text)
+                    else:
+                        QApplication.clipboard().setText(text)
+                    self.OldClip[0] = text
+                    self.ClipHistory.appendPlainText(text)
+                    threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), text,)).start()
                 else:
                     text = '{}'.format(QApplication.clipboard().text())
-                if self.OldClip[0] != text:
-                    self.ClipHistory.appendPlainText(text)
-                    self.OldClip[0] = text
-                    threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), text,)).start()
+                    if self.OldClip[0] != text:
+                        self.ClipHistory.appendPlainText(text)
+                        self.OldClip[0] = text
+                        threading.Thread(target=SendText, daemon=True, args=(self.Find.text(), text,)).start()
             if self.OldClip[0] != QApplication.clipboard().text():
                 self.ClipHistory.appendPlainText(QApplication.clipboard().text())
                 self.OldClip[0] = QApplication.clipboard().text()
