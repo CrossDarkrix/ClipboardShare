@@ -366,13 +366,13 @@ class SendText(object):
         if not self.host == '':
             try:
                 try:
-                    asyncio.run(self.send(text))
+                    threading.Thread(target=self.send, daemon=True, args=(text, )).start()
                 except:
                     pass
             except:
                 pass
 
-    async def send(self, text):
+    def send(self, text):
         _context = ssl.create_default_context()
         _context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         _context.load_verify_locations(os.path.join(os.getcwd(), "SSL-CRT.crt"))
@@ -711,18 +711,8 @@ class ClipboardShare(MDApp):
             return sock.getsockname()[0]
 
     def send(self):
-        if self.count_dot(text=self.Screen.ids['TextFiled'].text) and 8 <= len(self.Screen.ids['TextFiled'].text):
-            if self.Screen.ids['TextFiled'].text != '':
-                if self.Screen.ids['TextFiled'].text != '\u200B':
-                    SendText(host=self.Screen.ids['TextFiled'].text, text=clipboard.Clipboard.paste())
-        if 9 <= len(self.Screen.ids['TextFiled'].text) <= 15:
-            if self.count_dot(text=self.Screen.ids['TextFiled'].text):
-                if not os.path.exists(os.path.join(os.getcwd(), 'ip_address_list.txt')):
-                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'w', encoding='utf-8') as ip:
-                        ip.write('127.0.0.1, ')
-                else:
-                    with open(os.path.join(os.getcwd(), 'ip_address_list.txt'), 'a', encoding='utf-8') as ip:
-                        ip.write(', {}, '.format(self.Screen.ids['TextFiled'].text))
+        if self.Screen.ids['TextFiled'].text != '\u200B':
+            SendText(host=self.Screen.ids['TextFiled'].text, text=clipboard.Clipboard.paste())
 
     @mainthread
     def clear(self):
